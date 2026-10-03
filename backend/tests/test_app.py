@@ -58,6 +58,14 @@ def test_init_data_validation():
         validate_init_data(make_init_data(1, auth_date=1), "123456:TEST")
 
 
+def test_normalize_db_url():
+    from app.db import normalize_db_url
+
+    url, args = normalize_db_url("postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+    assert url == "postgresql+asyncpg://u:p@ep-x.eu-central-1.aws.neon.tech/neondb" and args == {"ssl": "require"}
+    assert normalize_db_url("sqlite+aiosqlite:///./data/x.db") == ("sqlite+aiosqlite:///./data/x.db", {})
+
+
 def test_auth_required(client):
     assert client.get("/api/me").status_code == 401
     bad = {"Authorization": "tma " + make_init_data(1, token="1:x")}
@@ -120,6 +128,17 @@ def test_tasks_and_reminders(client):
     n = asyncio.run(send_due_reminders(FakeBot()))
     assert n == 1 and sent[0][0] == 10 and "Купить молоко" in sent[0][1]
     assert asyncio.run(send_due_reminders(FakeBot())) == 0  # второй раз не шлём
+
+    # Цикл напоминаний спит до ближайшего неотправленного напоминания
+    from app.bot import next_reminder_at
+    from app.services import reminders_event
+
+    nxt = asyncio.run(next_reminder_at())
+    assert abs((nxt - datetime.fromisoformat(future)).total_seconds()) < 1
+    # Новое время у задачи будит цикл
+    reminders_event.clear()
+    client.post("/api/tasks", headers=hdr(10), json={"title": "Скоро", "remind_at": future})
+    assert reminders_event.is_set()
 
     r = client.patch(f"/api/tasks/{t1['id']}", headers=hdr(10), json={"done": True})
     assert r.json()["done"] is True

@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -5,8 +6,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     bot_token: str = ""
-    # Публичный HTTPS-адрес, где открыт Mini App (например, https://xxx.trycloudflare.com)
-    webapp_url: str = ""
+    # Публичный HTTPS-адрес, где открыт Mini App (например, https://xxx.trycloudflare.com).
+    # На Render подставляется сам из RENDER_EXTERNAL_URL.
+    webapp_url: str = Field("", validation_alias=AliasChoices("WEBAPP_URL", "RENDER_EXTERNAL_URL"))
     # Если задан — адрес берётся автоматически из cloudflared quick tunnel
     # (например, http://tunnel:2000). Тогда WEBAPP_URL можно не указывать.
     tunnel_metrics_url: str = ""

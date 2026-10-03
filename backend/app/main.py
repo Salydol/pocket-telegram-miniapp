@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -15,20 +16,30 @@ from .db import init_db
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pocket")
 
-REMINDER_INTERVAL = 20  # сек
+REMINDER_MAX_SLEEP = 6 * 3600  # сек: страховочная проверка, если ближайших напоминаний нет
+REMINDER_RETRY = 60  # сек: пауза после ошибки (например, БД просыпается)
 
 
 async def reminder_loop(bot):
-    from .bot import send_due_reminders
+    """Спит до ближайшего напоминания или до reminders_changed(), а не опрашивает БД каждые N секунд."""
+    from .bot import next_reminder_at, send_due_reminders
+    from .services import reminders_event
 
     while True:
+        reminders_event.clear()
         try:
             sent = await send_due_reminders(bot)
             if sent:
                 log.info("sent %d reminders", sent)
+            nxt = await next_reminder_at()
+            delay = REMINDER_MAX_SLEEP
+            if nxt:
+                delay = min(delay, max(1.0, (nxt - datetime.now(timezone.utc)).total_seconds()))
         except Exception:
             log.exception("reminder loop error")
-        await asyncio.sleep(REMINDER_INTERVAL)
+            delay = REMINDER_RETRY
+        with contextlib.suppress(asyncio.TimeoutError):
+            await asyncio.wait_for(reminders_event.wait(), timeout=delay)
 
 
 async def tunnel_watch(bot) -> None:

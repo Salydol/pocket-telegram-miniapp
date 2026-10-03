@@ -15,13 +15,13 @@ from aiogram.types import (
     Message,
     WebAppInfo,
 )
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from .config import settings
 from .db import SessionLocal
 from .models import Expense, Task
 from .parser import guess_category, parse_expense
-from .services import add_expense, as_utc, ensure_user, to_db, user_categories, user_zone
+from .services import add_expense, as_utc, ensure_user, reminders_changed, to_db, user_categories, user_zone
 
 log = logging.getLogger(__name__)
 router = Router()
@@ -136,6 +136,8 @@ async def add_task(msg: Message, command: CommandObject):
         task = Task(user_id=user.id, title=text[:256], remind_at=to_db(remind_at))
         s.add(task)
         await s.commit()
+    if remind_at:
+        reminders_changed()
     when = f"\n⏰ {remind_at:%d.%m %H:%M}" if remind_at else ""
     await msg.answer(f"✅ Задача добавлена: <b>{task.title}</b>{when}")
 
@@ -225,6 +227,7 @@ async def snooze(cb: CallbackQuery):
         t.remind_at = to_db(datetime.now(timezone.utc) + timedelta(minutes=int(minutes)))
         t.reminded = False
         await s.commit()
+    reminders_changed()
     label = f"{int(minutes) // 60} ч" if int(minutes) >= 60 else f"{minutes} мин"
     await cb.message.edit_text(f"⏰ {t.title}\n<i>Отложено на {label}</i>")
     await cb.answer()
@@ -258,6 +261,16 @@ async def send_due_reminders(bot: Bot) -> int:
             t.reminded = True
         await s.commit()
     return len(tasks)
+
+
+async def next_reminder_at() -> datetime | None:
+    async with SessionLocal() as s:
+        res = await s.execute(
+            select(func.min(Task.remind_at)).where(
+                Task.done.is_(False), Task.reminded.is_(False), Task.remind_at.is_not(None)
+            )
+        )
+        return as_utc(res.scalar())
 
 
 # ---------- сборка ----------

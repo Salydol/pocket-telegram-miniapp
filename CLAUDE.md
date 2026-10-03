@@ -5,11 +5,13 @@ Telegram-бот + Mini App для учёта трат и задач с напо�
 ## Стек
 - backend/: Python 3.12, aiogram 3.15 (long polling), FastAPI, SQLAlchemy 2 async, pydantic-settings. SQLite по умолчанию, Postgres через DATABASE_URL.
 - frontend/: React 18 + TypeScript + Vite, Recharts, Telegram WebApp SDK (script tag в index.html).
-- Один процесс: FastAPI (lifespan) запускает бота, цикл напоминаний (каждые 20 с) и watcher адреса cloudflared-туннеля; он же раздаёт собранный frontend/dist.
+- Один процесс: FastAPI (lifespan) запускает бота, цикл напоминаний и watcher адреса cloudflared-туннеля; он же раздаёт собранный frontend/dist.
+- Цикл напоминаний спит до ближайшего remind_at (максимум 6 ч) и не опрашивает БД по таймеру: бесплатный Neon должен засыпать. Любое изменение времени задачи → `services.reminders_changed()`.
 - Docker multi-stage + docker-compose (профиль `tunnel` = cloudflared quick tunnel).
+- Прод: Render free (render.yaml, Docker, Frankfurt) + Neon Postgres + UptimeRobot пингует /health. WEBAPP_URL берётся из RENDER_EXTERNAL_URL. К Postgres — NullPool, строку Neon с `sslmode` понимает `db.normalize_db_url`.
 
 ## Команды
-- Тесты: `cd backend && pip install -r requirements.txt pytest httpx && pytest -q` (12 тестов).
+- Тесты: `cd backend && pip install -r requirements.txt pytest httpx && pytest -q` (13 тестов; tests/conftest.py изолирует их от backend/.env). На Windows venv уже есть: `backend\.venv\Scripts\python.exe -m pytest -q`.
 - API без Telegram: `cd backend && DEV_USER_ID=1 RUN_BOT=false uvicorn app.main:app --reload`
 - Фронт: `cd frontend && npm install && npm run dev` (проксирует /api на :8000), сборка `npm run build`.
 - Всё вместе: `cp .env.example .env` → заполнить → `docker compose --profile tunnel up -d --build`.
@@ -27,6 +29,7 @@ Telegram-бот + Mini App для учёта трат и задач с напо�
 - Не коммитить .env и data/.
 - Любая новая выборка — только с фильтром по user_id (изоляция данных покрыта тестом).
 - Новые даты — через to_db()/as_utc().
+- Не добавлять фоновые задачи, которые трогают БД по таймеру (съедят лимит Neon).
 - После изменений бэка — pytest; после фронта — `npm run build` (там же tsc).
 
 ## Бэклог

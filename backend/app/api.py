@@ -24,7 +24,7 @@ from .schemas import (
     TaskOut,
     TaskPatch,
 )
-from .services import add_expense, as_utc, to_db, user_categories, user_zone
+from .services import add_expense, as_utc, reminders_changed, to_db, user_categories, user_zone
 
 router = APIRouter(prefix="/api")
 
@@ -234,6 +234,8 @@ async def create_task(body: TaskIn, user: User = Depends(current_user), session:
     t = Task(user_id=user.id, title=body.title.strip(), remind_at=to_db(body.remind_at))
     session.add(t)
     await session.commit()
+    if t.remind_at:
+        reminders_changed()
     return task_out(t)
 
 
@@ -251,6 +253,8 @@ async def update_task(
     elif body.remind_at is not None:
         t.remind_at, t.reminded = to_db(body.remind_at), False
     await session.commit()
+    if body.remind_at is not None or body.done is False:
+        reminders_changed()
     return task_out(t)
 
 

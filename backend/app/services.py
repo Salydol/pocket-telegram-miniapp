@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -6,6 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
 from .models import DEFAULT_CATEGORIES, Category, Expense, User
+
+# Будит цикл напоминаний, когда у задач меняется время: в остальное время он спит
+# до ближайшего напоминания и не трогает БД (бесплатный Neon засыпает без запросов).
+reminders_event = asyncio.Event()
+
+
+def reminders_changed() -> None:
+    reminders_event.set()
 
 
 def as_utc(dt: datetime | None) -> datetime | None:

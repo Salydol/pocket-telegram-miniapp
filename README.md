@@ -87,10 +87,19 @@ cd frontend && npm install && npm run dev    # http://localhost:5173, /api пр�
 
 | Вариант | Цена | Напоминания 24/7 | Комментарий |
 |---|---|---|---|
+| **Render + Neon + UptimeRobot** | 0, без карты | ✅ | Используется сейчас. Описан ниже |
 | Свой комп + Cloudflare Tunnel | 0 | только пока комп включён | Самый простой вариант, описан выше |
 | Бесплатная VM (например, Oracle Cloud Always Free) | 0 | ✅ | `git clone` → `docker compose --profile tunnel up -d`. Для верификации нужна карта |
 | Дешёвый VPS + свой домен | ~$3–5/мес | ✅ | Без профиля `tunnel`, указать `WEBAPP_URL=https://...`, перед приложением поставить nginx/Caddy с HTTPS |
 | Бесплатные PaaS (Render и т.п.) | 0 | ❌ | На бесплатных тарифах сервис засыпает без трафика, поэтому polling и напоминания останавливаются. Для этого бота не подходит |
+
+### Бесплатно 24/7: Render + Neon
+
+1. **Neon** — создай проект в регионе *AWS Europe Central 1 (Frankfurt)* и скопируй Connection string (`postgresql://...?sslmode=require`), её можно вставлять как есть. В *Compute* поставь максимум 0.25 CU.
+2. **Render** — *New → Blueprint*, выбери этот репозиторий: `render.yaml` создаст сервис `pocket` (Docker, free, Frankfurt). Заполни `BOT_TOKEN`, `ALLOWED_USERS`, `DATABASE_URL`. Адрес Mini App берётся из `RENDER_EXTERNAL_URL` сам.
+3. **UptimeRobot** — HTTP-монитор на `https://<сервис>.onrender.com/health` раз в 5 минут, иначе бесплатный Render засыпает через 15 минут без трафика и бот перестаёт отвечать.
+
+Лимиты: на Render free хватает часов ровно на один сервис 24/7. На Neon free 100 CU-часов в месяц (400 ч при 0.25 CU), а база засыпает через 5 минут без запросов. Поэтому цикл напоминаний не опрашивает БД по таймеру, а спит до ближайшего напоминания, и к Postgres приложение подключается без пула соединений.
 
 ## Открытие «одной кнопкой» с телефона
 

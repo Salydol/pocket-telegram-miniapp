@@ -1,0 +1,25 @@
+# Render Blueprint: бот + API + Mini App в одном бесплатном Docker-сервисе.
+# База — внешний Postgres (Neon free): диск бесплатного Render стирается при каждом перезапуске.
+# Чтобы сервис не засыпал, /health пингуется снаружи раз в 5 минут (UptimeRobot).
+services:
+  - name: pocket
+    type: web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ALLOWED_USERS
+        sync: false
+      # Строка подключения из Neon как есть: postgresql://...?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      - key: CURRENCY
+        value: ₸
+      - key: DEFAULT_TZ
+        value: Asia/Almaty
