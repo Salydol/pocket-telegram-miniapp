@@ -22,12 +22,16 @@ from app.main import app  # noqa: E402
 from app.parser import parse_expense  # noqa: E402
 
 
-def make_init_data(user_id: int, token: str = "123456:TEST", auth_date: int | None = None) -> str:
+def make_init_data(
+    user_id: int, token: str = "123456:TEST", auth_date: int | None = None, signature: str | None = None
+) -> str:
     fields = {
         "auth_date": str(auth_date or int(time.time())),
         "query_id": "AAH",
         "user": json.dumps({"id": user_id, "first_name": f"U{user_id}"}, separators=(",", ":")),
     }
+    if signature:
+        fields["signature"] = signature
     dcs = "\n".join(f"{k}={v}" for k, v in sorted(fields.items()))
     secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
     fields["hash"] = hmac.new(secret, dcs.encode(), hashlib.sha256).hexdigest()
@@ -46,6 +50,8 @@ def client():
 
 def test_init_data_validation():
     assert validate_init_data(make_init_data(1), "123456:TEST")["id"] == 1
+    # Современные клиенты присылают signature — она входит в data-check-string
+    assert validate_init_data(make_init_data(1, signature="sig_abc"), "123456:TEST")["id"] == 1
     with pytest.raises(ValueError):
         validate_init_data(make_init_data(1, token="999:OTHER"), "123456:TEST")
     with pytest.raises(ValueError):

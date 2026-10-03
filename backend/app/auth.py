@@ -24,7 +24,7 @@ def validate_init_data(init_data: str, bot_token: str, max_age: int = MAX_AGE_SE
     received_hash = pairs.pop("hash", None)
     if not received_hash:
         raise ValueError("no hash")
-    pairs.pop("signature", None)  # подпись для сторонних сервисов, в HMAC не участвует
+    # signature (Ed25519 для сторонних сервисов) в HMAC участвует наравне с остальными полями
 
     data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
     secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
