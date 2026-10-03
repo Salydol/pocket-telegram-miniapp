@@ -4,6 +4,7 @@ import { setCurrency } from "./format";
 import { haptic, inTelegram, tg } from "./tg";
 import Expenses from "./Expenses";
 import Tasks from "./Tasks";
+import ThemePicker from "./ThemePicker";
 
 type Tab = "money" | "tasks";
 
@@ -56,6 +57,7 @@ export default function App() {
         </button>
       </div>
       {tab === "money" ? <Expenses /> : <Tasks />}
+      <ThemePicker />
       {canPin && (
         <button className="link-btn" onClick={() => tg!.addToHomeScreen?.()}>
           📌 Добавить на главный экран

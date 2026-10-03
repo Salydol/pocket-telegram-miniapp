@@ -11,6 +11,7 @@ interface MainButton {
   hideProgress(): void;
   onClick(cb: () => void): void;
   offClick(cb: () => void): void;
+  setParams?(p: { color?: string; text_color?: string }): void;
 }
 
 interface WebApp {
@@ -34,6 +35,13 @@ interface WebApp {
     selectionChanged(): void;
   };
   setHeaderColor?(c: string): void;
+  setBackgroundColor?(c: string): void;
+  setBottomBarColor?(c: string): void;
+  themeParams?: { button_color?: string; button_text_color?: string; secondary_bg_color?: string };
+  CloudStorage?: {
+    getItem(key: string, cb: (err: string | null, value?: string) => void): void;
+    setItem(key: string, value: string, cb?: (err: string | null, ok?: boolean) => void): void;
+  };
 }
 
 declare global {
@@ -53,7 +61,7 @@ export function initTelegram() {
     return;
   }
   tg.ready();
-  if (tg.isVersionAtLeast("6.1")) tg.setHeaderColor?.("secondary_bg_color");
+  // Цвет шапки и фона выставляет theme.ts (applyTheme)
 }
 
 export const haptic = {

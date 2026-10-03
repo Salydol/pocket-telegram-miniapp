@@ -22,6 +22,7 @@ Telegram-бот + Mini App для учёта трат и задач с напо�
 - parser.py: «500 кофе», «такси 1.5к», «2 500 продукты» → сумма + заметка; guess_category по имени категории и ключевым словам.
 - bot.py: /start, /today, /week, /month, /task, /tasks, быстрый ввод траты текстом, callback-и undo/done/snooze, send_due_reminders.
 - Фронт: Expenses.tsx (ввод, итоги, история; графики показываются только когда окно развёрнуто — useExpanded/viewportChanged), Tasks.tsx, Charts.tsx, tg.ts (MainButton, haptics, confirm).
+- Оформление: theme.ts (палитры light/dark, applyTheme переопределяет --accent/--accent-text/--page/--bg и красит шапку/фон/MainButton Telegram; выбор в Telegram CloudStorage + кэш localStorage), ThemePicker.tsx. Новые цвета в CSS — только через эти переменные.
 - Категории не удаляются, а архивируются (archived=True), чтобы старые траты сохраняли категорию.
 - Схема создаётся через create_all, миграций пока нет.
 
