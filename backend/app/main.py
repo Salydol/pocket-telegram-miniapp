@@ -99,7 +99,8 @@ app = FastAPI(title="Pocket", lifespan=lifespan)
 app.include_router(api_router)
 
 
-@app.get("/health")
+# HEAD — для аптайм-мониторов (UptimeRobot по умолчанию шлёт HEAD), БД не трогаем
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"ok": True}
 

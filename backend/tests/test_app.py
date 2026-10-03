@@ -66,6 +66,11 @@ def test_normalize_db_url():
     assert normalize_db_url("sqlite+aiosqlite:///./data/x.db") == ("sqlite+aiosqlite:///./data/x.db", {})
 
 
+def test_health_head(client):
+    assert client.get("/health").status_code == 200
+    assert client.head("/health").status_code == 200  # UptimeRobot проверяет HEAD-запросом
+
+
 def test_auth_required(client):
     assert client.get("/api/me").status_code == 401
     bad = {"Authorization": "tma " + make_init_data(1, token="1:x")}
