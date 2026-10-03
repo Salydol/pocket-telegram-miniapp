@@ -54,6 +54,7 @@ async def ensure_user(
     if user is None:
         user = User(id=user_id, first_name=first_name, username=username, tz=settings.default_tz)
         session.add(user)
+        await session.flush()  # сначала users: категории ссылаются на него внешним ключом
         for name, emoji, color in DEFAULT_CATEGORIES:
             session.add(Category(user_id=user_id, name=name, emoji=emoji, color=color))
         changed = True
